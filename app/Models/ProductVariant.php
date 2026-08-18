@@ -1,0 +1,32 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class ProductVariant extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'product_id',
+        'color',
+        'size',
+        'material',
+        'sku',
+        'stock_quantity',
+        'price_override',
+    ];
+
+    protected $casts = [
+        'price_override' => 'decimal:2',
+        'stock_quantity' => 'integer',
+    ];
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
+    }
+}
