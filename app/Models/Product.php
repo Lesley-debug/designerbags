@@ -24,6 +24,8 @@ class Product extends Model
         'new_arrival',
     ];
 
+    protected $appends = ['display_price', 'in_stock'];
+
     protected $casts = [
         'base_price' => 'decimal:2',
         'sale_price' => 'decimal:2',

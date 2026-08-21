@@ -1,4 +1,4 @@
-import { Head } from "@inertiajs/react";
+import { Head, router } from "@inertiajs/react";
 import { useMemo, useState } from "react";
 import ProductCard from "@/components/ProductCard";
 import type { Product, ProductVariant } from "@/types/catalog";
@@ -48,12 +48,28 @@ export default function ProductDetail({
 
     function handleAddToCart() {
         if (!selectedVariant || !inStock) return;
-        // Cart isn't built yet — this is a placeholder call site.
-        // Swap for: router.post('/cart', { variant_id: selectedVariant.id, quantity })
-        setAddedMessage(
-            `Added ${quantity} × ${product.name} to cart (placeholder — cart not wired up yet).`,
+
+        router.post(
+            "/cart/items",
+            {
+                variant_id: selectedVariant.id,
+                quantity,
+            },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setAddedMessage(
+                        `Added ${quantity} × ${product.name} to cart.`,
+                    );
+                    setTimeout(() => setAddedMessage(null), 3000);
+                },
+                onError: () => {
+                    setAddedMessage(
+                        "Could not add to cart — check stock availability.",
+                    );
+                },
+            },
         );
-        setTimeout(() => setAddedMessage(null), 3000);
     }
 
     return (
