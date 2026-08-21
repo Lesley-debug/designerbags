@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Mail\OrderStatusUpdatedMail;
+use Illuminate\Support\Facades\Mail;
 
 class OrderController extends Controller
 {
@@ -48,6 +50,8 @@ class OrderController extends Controller
         ]);
 
         $order->update(['status' => $data['status']]);
+
+        Mail::to($order->customer_email)->send(new OrderStatusUpdatedMail($order));
 
         return back()->with('success', 'Order status updated.');
     }

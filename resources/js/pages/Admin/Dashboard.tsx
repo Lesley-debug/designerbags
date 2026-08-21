@@ -1,3 +1,4 @@
+import NotificationBell from "@/components/admin/NotificationBell";
 import { Head, Link } from "@inertiajs/react";
 import type { DashboardData } from "@/types/dashboard";
 
@@ -26,7 +27,10 @@ export default function Dashboard({
         <>
             <Head title="Admin Dashboard" />
             <div className="mx-auto max-w-6xl px-4 py-10">
-                <h1 className="mb-6 text-xl font-semibold">Dashboard</h1>
+                <div className="mb-6 flex items-center justify-between">
+                    <h1 className="text-xl font-semibold">Dashboard</h1>
+                    <NotificationBell />
+                </div>
 
                 {/* Revenue + orders summary */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

@@ -2,13 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\OrderConfirmationMail;
 use App\Models\Discount;
 use App\Models\Order;
 use App\Models\ProductVariant;
+use App\Models\User;
+use App\Notifications\LowStockNotification;
+use App\Notifications\NewOrderNotification;
 use App\Services\CartService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Notification;
 use Inertia\Inertia;
 
 class CheckoutController extends Controller
@@ -48,7 +54,7 @@ class CheckoutController extends Controller
         }
 
         try {
-            $order = DB::transaction(function () use ($cart, $data) {
+            $result = DB::transaction(function () use ($cart, $data) {
                 $variantIds = $cart->items->pluck('product_variant_id');
                 $variants = ProductVariant::whereIn('id', $variantIds)
                     ->lockForUpdate()
@@ -57,6 +63,7 @@ class CheckoutController extends Controller
 
                 $subtotal = 0;
                 $lineItems = [];
+                $lowStockVariants = [];
 
                 foreach ($cart->items as $cartItem) {
                     $variant = $variants[$cartItem->product_variant_id];
@@ -84,10 +91,12 @@ class CheckoutController extends Controller
                     ];
 
                     $variant->decrement('stock_quantity', $cartItem->quantity);
+
+                    if ($variant->fresh()->stock_quantity <= 5) {
+                        $lowStockVariants[] = $variant->fresh(['product']);
+                    }
                 }
 
-                // Re-validate and lock the discount row, if one is attached, so two
-                // simultaneous checkouts can't both redeem the last use of a limited coupon.
                 $discountCode = null;
                 $discountAmount = 0;
 
@@ -99,11 +108,9 @@ class CheckoutController extends Controller
                         $discountCode = $discount->code;
                         $discount->increment('uses_count');
                     }
-                    // if it's no longer valid (expired/maxed between apply and checkout),
-                    // we silently drop it rather than blocking the whole order.
                 }
 
-                $shippingCost = 0; // flat/free for now — real shipping calculation is a future extension
+                $shippingCost = 0;
                 $total = max(0, $subtotal + $shippingCost - $discountAmount);
 
                 $order = Order::create([
@@ -130,10 +137,23 @@ class CheckoutController extends Controller
                 $cart->items()->delete();
                 $cart->update(['discount_id' => null]);
 
-                return $order;
+                return ['order' => $order, 'lowStockVariants' => $lowStockVariants];
             });
         } catch (\RuntimeException $e) {
             return back()->withErrors(['stock' => $e->getMessage()]);
+        }
+
+        $order = $result['order'];
+
+        // Everything below runs only after the transaction has committed successfully —
+        // a mail/notification failure here must never look like a rolled-back order.
+        Mail::to($order->customer_email)->send(new OrderConfirmationMail($order));
+
+        $admins = User::where('is_admin', true)->get();
+        Notification::send($admins, new NewOrderNotification($order));
+
+        foreach ($result['lowStockVariants'] as $variant) {
+            Notification::send($admins, new LowStockNotification($variant));
         }
 
         return redirect("/orders/{$order->order_number}/confirmation");

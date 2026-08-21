@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\CustomerController as AdminCustomerController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
 use App\Http\Controllers\Admin\ProductVariantController;
 use App\Http\Controllers\Admin\ProductImageController;
 
@@ -66,6 +67,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('customers', [AdminCustomerController::class, 'index'])->name('customers.index');
     Route::get('customers/{email}', [AdminCustomerController::class, 'show'])->name('customers.show');
     Route::resource('discounts', AdminDiscountController::class)->except(['show']);
+    Route::get('notifications', [AdminNotificationController::class, 'index'])->name('notifications.index');
+    Route::patch('notifications/{id}/read', [AdminNotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('notifications/read-all', [AdminNotificationController::class, 'markAllAsRead'])->name('notifications.readAll');
 });
 
 //cart
