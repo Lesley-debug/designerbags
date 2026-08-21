@@ -183,11 +183,34 @@ export default function Checkout({ cart, user }: CheckoutProps) {
                             </div>
                         ))}
                     </div>
-                    <div className="mt-4 border-t border-stone-200 pt-3">
-                        <div className="flex justify-between text-sm font-semibold">
+                    <div className="mt-4 space-y-1 border-t border-stone-200 pt-3 text-sm">
+                        <div className="flex justify-between">
                             <span>Subtotal</span>
                             <span>
                                 {Number(cart.subtotal).toLocaleString()} FCFA
+                            </span>
+                        </div>
+                        {cart.discount_amount > 0 && (
+                            <div className="flex justify-between text-green-700">
+                                <span>
+                                    Discount{" "}
+                                    {cart.discount
+                                        ? `(${cart.discount.code})`
+                                        : ""}
+                                </span>
+                                <span>
+                                    −
+                                    {Number(
+                                        cart.discount_amount,
+                                    ).toLocaleString()}{" "}
+                                    FCFA
+                                </span>
+                            </div>
+                        )}
+                        <div className="flex justify-between font-semibold">
+                            <span>Total</span>
+                            <span>
+                                {Number(cart.total).toLocaleString()} FCFA
                             </span>
                         </div>
                     </div>

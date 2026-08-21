@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CartItem;
+use App\Models\Discount;
 use App\Models\ProductVariant;
 use App\Services\CartService;
 use Illuminate\Http\Request;
@@ -14,7 +15,7 @@ class CartController extends Controller
 
     public function index()
     {
-        $cart = $this->cartService->current()->load(['items.variant.product.images']);
+        $cart = $this->cartService->current()->load(['items.variant.product.images', 'discount']);
 
         return Inertia::render('Store/Cart', [
             'cart' => $cart,
@@ -75,5 +76,35 @@ class CartController extends Controller
         $item->delete();
 
         return back()->with('success', 'Item removed.');
+    }
+
+    public function applyDiscount(Request $request)
+    {
+        $data = $request->validate([
+            'code' => ['required', 'string'],
+        ]);
+
+        $cart = $this->cartService->current()->load('items');
+        $discount = Discount::where('code', $data['code'])->first();
+
+        if (! $discount) {
+            return back()->withErrors(['code' => 'Invalid discount code.']);
+        }
+
+        if (! $discount->isValidFor($cart->subtotal)) {
+            return back()->withErrors(['code' => 'This discount code is not valid for your order.']);
+        }
+
+        $cart->update(['discount_id' => $discount->id]);
+
+        return back()->with('success', 'Discount applied.');
+    }
+
+    public function removeDiscount()
+    {
+        $cart = $this->cartService->current();
+        $cart->update(['discount_id' => null]);
+
+        return back()->with('success', 'Discount removed.');
     }
 }

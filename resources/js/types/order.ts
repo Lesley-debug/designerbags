@@ -21,6 +21,8 @@ export interface Order {
     notes: string | null;
     subtotal: string;
     shipping_cost: string;
+    discount_code: string | null;
+    discount_amount: string;
     total: string;
     items: OrderItem[];
     created_at: string;

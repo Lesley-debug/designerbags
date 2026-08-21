@@ -32,6 +32,20 @@ export default function OrderConfirmation({ order }: { order: Order }) {
                             </span>
                         </div>
                     ))}
+                    {Number(order.discount_amount) > 0 && (
+                        <div className="flex justify-between border-b border-stone-100 py-2 text-sm text-green-700">
+                            <span>
+                                Discount{" "}
+                                {order.discount_code
+                                    ? `(${order.discount_code})`
+                                    : ""}
+                            </span>
+                            <span>
+                                −{Number(order.discount_amount).toLocaleString()}{" "}
+                                FCFA
+                            </span>
+                        </div>
+                    )}
                     <div className="mt-3 flex justify-between font-semibold">
                         <span>Total</span>
                         <span>{Number(order.total).toLocaleString()} FCFA</span>

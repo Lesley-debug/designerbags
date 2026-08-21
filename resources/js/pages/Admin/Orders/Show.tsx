@@ -127,6 +127,19 @@ export default function Show({ order }: { order: Order }) {
                             Shipping:{" "}
                             {Number(order.shipping_cost).toLocaleString()} FCFA
                         </p>
+                        {Number(order.discount_amount) > 0 && (
+                            <p className="text-green-700">
+                                Discount{" "}
+                                {order.discount_code
+                                    ? `(${order.discount_code})`
+                                    : ""}
+                                : −
+                                {Number(
+                                    order.discount_amount,
+                                ).toLocaleString()}{" "}
+                                FCFA
+                            </p>
+                        )}
                         <p className="text-base font-semibold">
                             Total: {Number(order.total).toLocaleString()} FCFA
                         </p>

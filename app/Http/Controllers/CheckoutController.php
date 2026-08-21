@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Discount;
 use App\Models\Order;
-use App\Models\OrderItem;
 use App\Models\ProductVariant;
 use App\Services\CartService;
 use Illuminate\Http\Request;
@@ -17,7 +17,7 @@ class CheckoutController extends Controller
 
     public function show()
     {
-        $cart = $this->cartService->current()->load(['items.variant.product']);
+        $cart = $this->cartService->current()->load(['items.variant.product', 'discount']);
 
         if ($cart->items->isEmpty()) {
             return redirect('/cart')->withErrors(['cart' => 'Your cart is empty.']);
@@ -49,8 +49,6 @@ class CheckoutController extends Controller
 
         try {
             $order = DB::transaction(function () use ($cart, $data) {
-                // Lock the variant rows for the duration of this transaction so two
-                // simultaneous checkouts can't both oversell the same last-in-stock item.
                 $variantIds = $cart->items->pluck('product_variant_id');
                 $variants = ProductVariant::whereIn('id', $variantIds)
                     ->lockForUpdate()
@@ -88,7 +86,25 @@ class CheckoutController extends Controller
                     $variant->decrement('stock_quantity', $cartItem->quantity);
                 }
 
+                // Re-validate and lock the discount row, if one is attached, so two
+                // simultaneous checkouts can't both redeem the last use of a limited coupon.
+                $discountCode = null;
+                $discountAmount = 0;
+
+                if ($cart->discount_id) {
+                    $discount = Discount::whereKey($cart->discount_id)->lockForUpdate()->first();
+
+                    if ($discount && $discount->isValidFor($subtotal)) {
+                        $discountAmount = $discount->calculateDiscountAmount($subtotal);
+                        $discountCode = $discount->code;
+                        $discount->increment('uses_count');
+                    }
+                    // if it's no longer valid (expired/maxed between apply and checkout),
+                    // we silently drop it rather than blocking the whole order.
+                }
+
                 $shippingCost = 0; // flat/free for now — real shipping calculation is a future extension
+                $total = max(0, $subtotal + $shippingCost - $discountAmount);
 
                 $order = Order::create([
                     'user_id' => Auth::id(),
@@ -102,7 +118,9 @@ class CheckoutController extends Controller
                     'notes' => $data['notes'] ?? null,
                     'subtotal' => $subtotal,
                     'shipping_cost' => $shippingCost,
-                    'total' => $subtotal + $shippingCost,
+                    'discount_code' => $discountCode,
+                    'discount_amount' => $discountAmount,
+                    'total' => $total,
                 ]);
 
                 foreach ($lineItems as $line) {
@@ -110,6 +128,7 @@ class CheckoutController extends Controller
                 }
 
                 $cart->items()->delete();
+                $cart->update(['discount_id' => null]);
 
                 return $order;
             });

@@ -8,6 +8,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Admin\DiscountController as AdminDiscountController;
 use App\Http\Controllers\Admin\CustomerController as AdminCustomerController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
@@ -62,4 +63,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::patch('orders/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('orders.status');
     Route::get('customers', [AdminCustomerController::class, 'index'])->name('customers.index');
     Route::get('customers/{email}', [AdminCustomerController::class, 'show'])->name('customers.show');
+    Route::resource('discounts', AdminDiscountController::class)->except(['show']);
 });
+
+//cart
+Route::post('/cart/discount', [CartController::class, 'applyDiscount'])->name('cart.discount.apply');
+Route::delete('/cart/discount', [CartController::class, 'removeDiscount'])->name('cart.discount.remove');

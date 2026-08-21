@@ -6,23 +6,18 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('carts', function (Blueprint $table) {
-            //
+            $table->foreignId('discount_id')->nullable()->after('session_id')->constrained()->nullOnDelete();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('carts', function (Blueprint $table) {
-            //
+            $table->dropForeign(['discount_id']);
+            $table->dropColumn('discount_id');
         });
     }
 };

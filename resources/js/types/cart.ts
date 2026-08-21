@@ -10,9 +10,19 @@ export interface CartItem {
     variant: ProductVariant & { product: Product };
 }
 
+export interface CartDiscount {
+    id: number;
+    code: string;
+    type: "percentage" | "fixed";
+    value: string;
+}
+
 export interface Cart {
     id: number;
     items: CartItem[];
     subtotal: number;
     item_count: number;
+    discount_amount: number;
+    total: number;
+    discount: CartDiscount | null;
 }
